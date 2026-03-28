@@ -1,13 +1,15 @@
 <?xml version="1.0"?>
-<acl xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
-    <resources>
-        <resource id="Magento_Backend::admin">
-            <resource id="Magento_Webapi::rest">
-                <resource id="SeoulCommerce_KoreaCheckoutAdapter::api"
-                    title="Korea Checkout Adapter API"
-                    sortOrder="10"/>
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Webapi::rest">
+                    <resource id="SeoulCommerce_KoreaCheckoutAdapter::api"
+                        title="Korea Checkout Adapter API"
+                        sortOrder="10"/>
+                </resource>
             </resource>
-        </resource>
-    </resources>
-</acl>
+        </resources>
+    </acl>
+</config>
