@@ -4,11 +4,10 @@
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
-                <resource id="Magento_Webapi::rest">
-                    <resource id="SeoulCommerce_KoreaCheckoutAdapter::api"
-                        title="Korea Checkout Adapter API"
-                        sortOrder="10"/>
-                </resource>
+                <resource id="SeoulCommerce_KoreaCheckoutAdapter::api"
+                    title="Korea Checkout Adapter API"
+                    translate="title"
+                    sortOrder="10"/>
             </resource>
         </resources>
     </acl>
