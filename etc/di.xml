@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="SeoulCommerce\KoreaCheckoutAdapter\Api\CreatePendingOrderInterface"
+        type="SeoulCommerce\KoreaCheckoutAdapter\Model\Service\CreatePendingOrderService"/>
+    <preference for="SeoulCommerce\KoreaCheckoutAdapter\Api\AttachPaymentSessionInterface"
+        type="SeoulCommerce\KoreaCheckoutAdapter\Model\Service\AttachPaymentSessionService"/>
+    <preference for="SeoulCommerce\KoreaCheckoutAdapter\Api\ApplyPaymentEventInterface"
+        type="SeoulCommerce\KoreaCheckoutAdapter\Model\Service\ApplyPaymentEventService"/>
+    <preference for="SeoulCommerce\KoreaCheckoutAdapter\Api\GetOrderPaymentStateInterface"
+        type="SeoulCommerce\KoreaCheckoutAdapter\Model\Service\GetOrderPaymentStateService"/>
+</config>

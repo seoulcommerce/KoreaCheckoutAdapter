@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+    <route url="/V1/seoulcommerce-korea-checkout/orders/pending" method="POST">
+        <service class="SeoulCommerce\KoreaCheckoutAdapter\Api\CreatePendingOrderInterface" method="execute"/>
+        <resources>
+            <resource ref="SeoulCommerce_KoreaCheckoutAdapter::api"/>
+        </resources>
+    </route>
+    <route url="/V1/seoulcommerce-korea-checkout/orders/:orderId/attach-session" method="POST">
+        <service class="SeoulCommerce\KoreaCheckoutAdapter\Api\AttachPaymentSessionInterface" method="execute"/>
+        <resources>
+            <resource ref="SeoulCommerce_KoreaCheckoutAdapter::api"/>
+        </resources>
+    </route>
+    <route url="/V1/seoulcommerce-korea-checkout/orders/:orderId/apply-payment-event" method="POST">
+        <service class="SeoulCommerce\KoreaCheckoutAdapter\Api\ApplyPaymentEventInterface" method="execute"/>
+        <resources>
+            <resource ref="SeoulCommerce_KoreaCheckoutAdapter::api"/>
+        </resources>
+    </route>
+    <route url="/V1/seoulcommerce-korea-checkout/orders/:orderId/payment-state" method="GET">
+        <service class="SeoulCommerce\KoreaCheckoutAdapter\Api\GetOrderPaymentStateInterface" method="execute"/>
+        <resources>
+            <resource ref="SeoulCommerce_KoreaCheckoutAdapter::api"/>
+        </resources>
+    </route>
+</routes>

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="seoulcommerce_korea_checkout_binding" resource="default" engine="innodb"
+        comment="Korea Checkout Binding">
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false"
+            identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="order_id" padding="10" unsigned="true" nullable="false"
+            comment="Magento Order ID"/>
+        <column xsi:type="varchar" name="increment_id" nullable="false" length="32"
+            comment="Order Increment ID"/>
+        <column xsi:type="varchar" name="payment_session_id" nullable="false" length="64"
+            comment="Payment Session ID"/>
+        <column xsi:type="varchar" name="platform_event_id_last_applied" nullable="true" length="64"
+            comment="Last Applied Platform Event ID"/>
+        <column xsi:type="varchar" name="gateway" nullable="false" length="32" comment="Gateway"/>
+        <column xsi:type="varchar" name="payment_method" nullable="false" length="64"
+            comment="Payment Method"/>
+        <column xsi:type="varchar" name="binding_status" nullable="false" length="32"
+            default="attached" comment="Binding Status"/>
+        <column xsi:type="varchar" name="last_normalized_status" nullable="true" length="64"
+            comment="Last Normalized Status"/>
+        <column xsi:type="varchar" name="last_gateway_transaction_ref" nullable="true" length="128"
+            comment="Last Gateway Transaction Ref"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+            default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false"
+            default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="SEOULCOMMERCE_KOREA_CHECKOUT_BINDING_ORDER_ID_UNIQUE">
+            <column name="order_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="SEOULCOMMERCE_KOREA_CHECKOUT_BINDING_SESSION_ID_UNIQUE">
+            <column name="payment_session_id"/>
+        </constraint>
+        <constraint xsi:type="foreign"
+            referenceId="SEOULCOMMERCE_KOREA_CHECKOUT_BINDING_ORDER_ID_SALES_ORDER"
+            table="seoulcommerce_korea_checkout_binding" column="order_id"
+            referenceTable="sales_order" referenceColumn="entity_id" onDelete="CASCADE"/>
+        <index referenceId="SEOULCOMMERCE_KOREA_CHECKOUT_INCREMENT_ID_IDX" indexType="btree">
+            <column name="increment_id"/>
+        </index>
+    </table>
+</schema>
