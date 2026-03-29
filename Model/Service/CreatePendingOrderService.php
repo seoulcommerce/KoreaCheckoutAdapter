@@ -9,6 +9,7 @@ use Magento\Framework\Exception\InputException;
 use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\CartInterface;
+use Magento\Quote\Api\GuestCartManagementInterface;
 use Magento\Quote\Api\PaymentMethodManagementInterface;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -24,6 +25,7 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         private readonly QuoteIdMaskFactory $quoteIdMaskFactory,
         private readonly CartRepositoryInterface $cartRepository,
         private readonly CartManagementInterface $cartManagement,
+        private readonly GuestCartManagementInterface $guestCartManagement,
         private readonly PaymentMethodManagementInterface $paymentMethodManagement,
         private readonly OrderRepositoryInterface $orderRepository,
         private readonly CreatePendingOrderResponseFactory $responseFactory
@@ -59,7 +61,11 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         $this->cartRepository->save($quote);
 
         try {
-            $orderId = (int) $this->cartManagement->placeOrder($quoteId);
+            $orderId = (int) (
+                $quote->getCustomerId()
+                    ? $this->cartManagement->placeOrder($quoteId)
+                    : $this->guestCartManagement->placeOrder($cartId)
+            );
         } catch (\Throwable $e) {
             throw new LocalizedException(
                 new Phrase(
