@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace SeoulCommerce\KoreaCheckoutAdapter\Model\Service;
 
+use Magento\Customer\Api\Data\GroupInterface;
+use Magento\Framework\Exception\InputException;
 use Magento\Quote\Api\CartManagementInterface;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Quote\Api\Data\CartInterface;
+use Magento\Quote\Api\PaymentMethodManagementInterface;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -15,7 +20,9 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
 {
     public function __construct(
         private readonly QuoteIdMaskFactory $quoteIdMaskFactory,
+        private readonly CartRepositoryInterface $cartRepository,
         private readonly CartManagementInterface $cartManagement,
+        private readonly PaymentMethodManagementInterface $paymentMethodManagement,
         private readonly OrderRepositoryInterface $orderRepository
     ) {
     }
@@ -29,7 +36,7 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         ?string $customerEmail,
         string $idempotencyKey
     ): array {
-        unset($merchantId, $storeId, $gateway, $paymentMethod, $customerEmail, $idempotencyKey);
+        unset($merchantId, $storeId, $idempotencyKey);
 
         $quoteIdMask = $this->quoteIdMaskFactory->create()->load($cartId, 'masked_id');
         $quoteId = (int) $quoteIdMask->getQuoteId();
@@ -38,12 +45,28 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
             throw new LocalizedException(new Phrase('Masked cart id could not be resolved.'));
         }
 
-        /**
-         * v1 note:
-         * - idempotency key handling still needs a dedicated adapter-side store or quote/order lookup strategy
-         * - gateway/payment method are expected to have already been applied to the quote before placement
-         */
-        $orderId = (int) $this->cartManagement->placeOrder($quoteId);
+        $quote = $this->cartRepository->get($quoteId);
+        $this->validateQuote($quote, $customerEmail);
+        $this->prepareGuestQuote($quote, $customerEmail);
+
+        $resolvedPaymentMethod = $this->resolvePaymentMethodCode($quoteId, $quote, $gateway, $paymentMethod);
+        $quote->getPayment()->importData(['method' => $resolvedPaymentMethod]);
+        $quote->setTotalsCollectedFlag(false);
+        $quote->collectTotals();
+        $this->cartRepository->save($quote);
+
+        try {
+            $orderId = (int) $this->cartManagement->placeOrder($quoteId);
+        } catch (\Throwable $e) {
+            throw new LocalizedException(
+                new Phrase(
+                    'Order placement failed for masked cart %1 using payment method %2: %3',
+                    [$cartId, $resolvedPaymentMethod, $e->getMessage()]
+                ),
+                $e
+            );
+        }
+
         $order = $this->orderRepository->get($orderId);
 
         return [
@@ -53,5 +76,77 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
             'state' => (string) $order->getState(),
             'status' => (string) $order->getStatus(),
         ];
+    }
+
+    private function validateQuote(CartInterface $quote, ?string $customerEmail): void
+    {
+        if (!$quote->getItemsCount()) {
+            throw new InputException(new Phrase('Quote is empty and cannot be converted into an order.'));
+        }
+
+        if (!$quote->isVirtual()) {
+            $shippingAddress = $quote->getShippingAddress();
+
+            if (!$shippingAddress || !$shippingAddress->getCountryId()) {
+                throw new InputException(new Phrase('Quote is missing a shipping address.'));
+            }
+
+            if (!$shippingAddress->getShippingMethod()) {
+                throw new InputException(new Phrase('Quote is missing a shipping method.'));
+            }
+        }
+
+        if (!$quote->getBillingAddress() || !$quote->getBillingAddress()->getCountryId()) {
+            throw new InputException(new Phrase('Quote is missing a billing address.'));
+        }
+
+        if (!$quote->getCustomerId() && !$quote->getCustomerEmail() && !$customerEmail) {
+            throw new InputException(new Phrase('Guest quote is missing a customer email.'));
+        }
+    }
+
+    private function prepareGuestQuote(CartInterface $quote, ?string $customerEmail): void
+    {
+        if ($quote->getCustomerId()) {
+            return;
+        }
+
+        $email = $customerEmail ?: (string) $quote->getCustomerEmail();
+        $quote->setCustomerEmail($email);
+        $quote->setCustomerIsGuest(true);
+        $quote->setCustomerGroupId(GroupInterface::NOT_LOGGED_IN_ID);
+        $quote->setCheckoutMethod('guest');
+    }
+
+    private function resolvePaymentMethodCode(
+        int $quoteId,
+        CartInterface $quote,
+        string $gateway,
+        string $paymentMethod
+    ): string {
+        $availableMethods = $this->paymentMethodManagement->getList($quoteId);
+        $availableCodes = array_values(array_filter(array_map(
+            static fn ($method): string => (string) $method->getCode(),
+            $availableMethods
+        )));
+
+        $candidates = array_values(array_unique(array_filter([
+            (string) $quote->getPayment()->getMethod(),
+            $paymentMethod,
+            $gateway,
+        ])));
+
+        foreach ($candidates as $candidate) {
+            if (in_array($candidate, $availableCodes, true)) {
+                return $candidate;
+            }
+        }
+
+        throw new InputException(
+            new Phrase(
+                'No valid Magento payment method could be resolved. Requested candidates: %1. Available methods: %2',
+                [implode(', ', $candidates), implode(', ', $availableCodes)]
+            )
+        );
     }
 }
