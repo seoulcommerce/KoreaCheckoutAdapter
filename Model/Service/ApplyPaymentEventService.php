@@ -20,6 +20,7 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
         private readonly BindingResource $bindingResource,
         private readonly StatusMapper $statusMapper,
         private readonly PaymentMetadataWriter $paymentMetadataWriter,
+        private readonly RecordPaymentTransactionService $recordPaymentTransactionService,
         private readonly InvoiceOrderService $invoiceOrderService,
         private readonly ApplyPaymentEventResponseFactory $responseFactory
     ) {
@@ -63,6 +64,20 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
             'payment_orchestration_last_normalized_status' => $normalizedStatus,
             'payment_orchestration_gateway_transaction_ref' => $gatewayTransactionRef,
         ]);
+
+        if ($normalizedStatus === 'paid' && $gatewayTransactionRef !== null) {
+            $this->recordPaymentTransactionService->execute(
+                $order,
+                $gatewayTransactionRef,
+                [
+                    'payment_session_id' => $paymentSessionId,
+                    'payment_event_id' => $paymentEventId,
+                    'normalized_status' => $normalizedStatus,
+                    'occurred_at' => $occurredAt,
+                    'gateway_transaction_ref' => $gatewayTransactionRef,
+                ]
+            );
+        }
 
         $this->orderRepository->save($order);
 
