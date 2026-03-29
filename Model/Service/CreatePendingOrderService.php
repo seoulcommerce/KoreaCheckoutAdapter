@@ -24,11 +24,12 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         string $merchantId,
         string $storeId,
         string $cartId,
-        array $paymentSelection,
-        ?array $customer,
+        string $gateway,
+        string $paymentMethod,
+        ?string $customerEmail,
         string $idempotencyKey
     ): array {
-        unset($merchantId, $storeId, $paymentSelection, $customer, $idempotencyKey);
+        unset($merchantId, $storeId, $gateway, $paymentMethod, $customerEmail, $idempotencyKey);
 
         $quoteIdMask = $this->quoteIdMaskFactory->create()->load($cartId, 'masked_id');
         $quoteId = (int) $quoteIdMask->getQuoteId();
@@ -40,7 +41,7 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         /**
          * v1 note:
          * - idempotency key handling still needs a dedicated adapter-side store or quote/order lookup strategy
-         * - payment selection is expected to have already been applied to the quote before placement
+         * - gateway/payment method are expected to have already been applied to the quote before placement
          */
         $orderId = (int) $this->cartManagement->placeOrder($quoteId);
         $order = $this->orderRepository->get($orderId);

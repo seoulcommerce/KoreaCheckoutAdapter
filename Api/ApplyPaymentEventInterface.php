@@ -12,7 +12,7 @@ interface ApplyPaymentEventInterface
      * @param string $paymentSessionId
      * @param string $normalizedStatus
      * @param string|null $occurredAt
-     * @param array<string, mixed>|null $payload
+     * @param string|null $gatewayTransactionRef
      * @return array<string, mixed>
      */
     public function execute(
@@ -21,6 +21,6 @@ interface ApplyPaymentEventInterface
         string $paymentSessionId,
         string $normalizedStatus,
         ?string $occurredAt = null,
-        ?array $payload = null
+        ?string $gatewayTransactionRef = null
     ): array;
 }

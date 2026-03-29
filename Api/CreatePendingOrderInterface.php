@@ -10,8 +10,9 @@ interface CreatePendingOrderInterface
      * @param string $merchantId
      * @param string $storeId
      * @param string $cartId
-     * @param array<string, mixed> $paymentSelection
-     * @param array<string, mixed>|null $customer
+     * @param string $gateway
+     * @param string $paymentMethod
+     * @param string|null $customerEmail
      * @param string $idempotencyKey
      * @return array<string, mixed>
      */
@@ -19,8 +20,9 @@ interface CreatePendingOrderInterface
         string $merchantId,
         string $storeId,
         string $cartId,
-        array $paymentSelection,
-        ?array $customer,
+        string $gateway,
+        string $paymentMethod,
+        ?string $customerEmail,
         string $idempotencyKey
     ): array;
 }

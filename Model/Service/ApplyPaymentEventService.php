@@ -28,7 +28,7 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
         string $paymentSessionId,
         string $normalizedStatus,
         ?string $occurredAt = null,
-        ?array $payload = null
+        ?string $gatewayTransactionRef = null
     ): array {
         $order = $this->orderRepository->get((int) $orderId);
         $binding = $this->bindingLookup->getByOrderId((int) $order->getEntityId());
@@ -53,10 +53,6 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
 
         $order->setState($mapped['state']);
         $order->setStatus($mapped['status']);
-
-        $gatewayTransactionRef = is_array($payload) && isset($payload['gatewayTransactionRef'])
-            ? (string) $payload['gatewayTransactionRef']
-            : null;
 
         $this->paymentMetadataWriter->write($order, [
             'payment_session_id' => $paymentSessionId,
