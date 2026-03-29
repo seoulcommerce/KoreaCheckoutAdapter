@@ -61,11 +61,10 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         $this->cartRepository->save($quote);
 
         try {
-            $orderId = (int) (
-                $quote->getCustomerId()
-                    ? $this->cartManagement->placeOrder($quoteId)
-                    : $this->guestCartManagement->placeOrder($cartId)
-            );
+            // This adapter contract accepts Magento masked cart ids. Use the guest-cart placement
+            // path consistently so Magento resolves the mask instead of treating the internal quote id
+            // as a guest cart id.
+            $orderId = (int) $this->guestCartManagement->placeOrder($cartId);
         } catch (\Throwable $e) {
             throw new LocalizedException(
                 new Phrase(
