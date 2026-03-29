@@ -15,6 +15,8 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use SeoulCommerce\KoreaCheckoutAdapter\Api\CreatePendingOrderInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Api\Data\CreatePendingOrderResponseInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Model\Data\CreatePendingOrderResponseFactory;
 
 class CreatePendingOrderService implements CreatePendingOrderInterface
 {
@@ -23,7 +25,8 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         private readonly CartRepositoryInterface $cartRepository,
         private readonly CartManagementInterface $cartManagement,
         private readonly PaymentMethodManagementInterface $paymentMethodManagement,
-        private readonly OrderRepositoryInterface $orderRepository
+        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly CreatePendingOrderResponseFactory $responseFactory
     ) {
     }
 
@@ -35,7 +38,7 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
         string $paymentMethod,
         ?string $customerEmail,
         string $idempotencyKey
-    ): array {
+    ): CreatePendingOrderResponseInterface {
         unset($merchantId, $storeId, $idempotencyKey);
 
         $quoteIdMask = $this->quoteIdMaskFactory->create()->load($cartId, 'masked_id');
@@ -69,13 +72,12 @@ class CreatePendingOrderService implements CreatePendingOrderInterface
 
         $order = $this->orderRepository->get($orderId);
 
-        return [
-            'platformType' => 'magento',
-            'orderId' => (string) $order->getEntityId(),
-            'orderNumber' => (string) $order->getIncrementId(),
-            'state' => (string) $order->getState(),
-            'status' => (string) $order->getStatus(),
-        ];
+        return $this->responseFactory->create()
+            ->setPlatformType('magento')
+            ->setOrderId((string) $order->getEntityId())
+            ->setOrderNumber((string) $order->getIncrementId())
+            ->setState((string) $order->getState())
+            ->setStatus((string) $order->getStatus());
     }
 
     private function validateQuote(CartInterface $quote, ?string $customerEmail): void

@@ -10,6 +10,8 @@ use SeoulCommerce\KoreaCheckoutAdapter\Model\ResourceModel\Binding as BindingRes
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use SeoulCommerce\KoreaCheckoutAdapter\Api\AttachPaymentSessionInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Api\Data\AttachPaymentSessionResponseInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Model\Data\AttachPaymentSessionResponseFactory;
 
 class AttachPaymentSessionService implements AttachPaymentSessionInterface
 {
@@ -18,11 +20,12 @@ class AttachPaymentSessionService implements AttachPaymentSessionInterface
         private readonly BindingFactory $bindingFactory,
         private readonly BindingResource $bindingResource,
         private readonly BindingLookup $bindingLookup,
-        private readonly PaymentMetadataWriter $paymentMetadataWriter
+        private readonly PaymentMetadataWriter $paymentMetadataWriter,
+        private readonly AttachPaymentSessionResponseFactory $responseFactory
     ) {
     }
 
-    public function execute(string $orderId, string $paymentSessionId): array
+    public function execute(string $orderId, string $paymentSessionId): AttachPaymentSessionResponseInterface
     {
         $order = $this->orderRepository->get((int) $orderId);
         $existingByOrder = $this->bindingLookup->getByOrderId((int) $order->getEntityId());
@@ -56,11 +59,10 @@ class AttachPaymentSessionService implements AttachPaymentSessionInterface
         ]);
         $this->orderRepository->save($order);
 
-        return [
-            'attached' => true,
-            'orderId' => (string) $order->getEntityId(),
-            'orderNumber' => (string) $order->getIncrementId(),
-            'paymentSessionId' => $paymentSessionId,
-        ];
+        return $this->responseFactory->create()
+            ->setAttached(true)
+            ->setOrderId((string) $order->getEntityId())
+            ->setOrderNumber((string) $order->getIncrementId())
+            ->setPaymentSessionId($paymentSessionId);
     }
 }

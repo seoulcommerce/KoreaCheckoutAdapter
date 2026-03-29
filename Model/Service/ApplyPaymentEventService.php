@@ -9,6 +9,8 @@ use SeoulCommerce\KoreaCheckoutAdapter\Model\ResourceModel\Binding as BindingRes
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use SeoulCommerce\KoreaCheckoutAdapter\Api\ApplyPaymentEventInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Api\Data\ApplyPaymentEventResponseInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Model\Data\ApplyPaymentEventResponseFactory;
 
 class ApplyPaymentEventService implements ApplyPaymentEventInterface
 {
@@ -18,7 +20,8 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
         private readonly BindingResource $bindingResource,
         private readonly StatusMapper $statusMapper,
         private readonly PaymentMetadataWriter $paymentMetadataWriter,
-        private readonly InvoiceOrderService $invoiceOrderService
+        private readonly InvoiceOrderService $invoiceOrderService,
+        private readonly ApplyPaymentEventResponseFactory $responseFactory
     ) {
     }
 
@@ -29,7 +32,7 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
         string $normalizedStatus,
         ?string $occurredAt = null,
         ?string $gatewayTransactionRef = null
-    ): array {
+    ): ApplyPaymentEventResponseInterface {
         $order = $this->orderRepository->get((int) $orderId);
         $binding = $this->bindingLookup->getByOrderId((int) $order->getEntityId());
 
@@ -63,9 +66,8 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
 
         $this->orderRepository->save($order);
 
-        $invoiceResult = null;
         if ($normalizedStatus === 'paid') {
-            $invoiceResult = $this->invoiceOrderService->execute($order);
+            $this->invoiceOrderService->execute($order);
         }
 
         $binding->setData('platform_event_id_last_applied', $paymentEventId);
@@ -75,33 +77,22 @@ class ApplyPaymentEventService implements ApplyPaymentEventInterface
         }
         $this->bindingResource->save($binding);
 
-        return $this->buildResult($order, $binding, true, $invoiceResult);
+        return $this->buildResult($order, $binding, true);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function buildResult(
         \Magento\Sales\Api\Data\OrderInterface $order,
         \SeoulCommerce\KoreaCheckoutAdapter\Model\Binding $binding,
-        bool $applied,
-        ?array $invoiceResult = null
-    ): array {
-        $result = [
-            'applied' => $applied,
-            'orderId' => (string) $order->getEntityId(),
-            'orderNumber' => (string) $order->getIncrementId(),
-            'state' => (string) $order->getState(),
-            'status' => (string) $order->getStatus(),
-            'paymentSessionId' => (string) $binding->getData('payment_session_id'),
-            'lastPaymentEventId' => (string) $binding->getData('platform_event_id_last_applied'),
-            'lastNormalizedStatus' => (string) $binding->getData('last_normalized_status'),
-        ];
-
-        if ($invoiceResult !== null) {
-            $result['invoice'] = $invoiceResult;
-        }
-
-        return $result;
+        bool $applied
+    ): ApplyPaymentEventResponseInterface {
+        return $this->responseFactory->create()
+            ->setApplied($applied)
+            ->setOrderId((string) $order->getEntityId())
+            ->setOrderNumber((string) $order->getIncrementId())
+            ->setState((string) $order->getState())
+            ->setStatus((string) $order->getStatus())
+            ->setPaymentSessionId((string) $binding->getData('payment_session_id'))
+            ->setLastPaymentEventId($binding->getData('platform_event_id_last_applied') !== null ? (string) $binding->getData('platform_event_id_last_applied') : null)
+            ->setLastNormalizedStatus($binding->getData('last_normalized_status') !== null ? (string) $binding->getData('last_normalized_status') : null);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SeoulCommerce\KoreaCheckoutAdapter\Api;
 
+use SeoulCommerce\KoreaCheckoutAdapter\Api\Data\CreatePendingOrderResponseInterface;
+
 interface CreatePendingOrderInterface
 {
     /**
@@ -14,7 +16,7 @@ interface CreatePendingOrderInterface
      * @param string $paymentMethod
      * @param string|null $customerEmail
      * @param string $idempotencyKey
-     * @return array<string, mixed>
+     * @return \SeoulCommerce\KoreaCheckoutAdapter\Api\Data\CreatePendingOrderResponseInterface
      */
     public function execute(
         string $merchantId,
@@ -24,5 +26,5 @@ interface CreatePendingOrderInterface
         string $paymentMethod,
         ?string $customerEmail,
         string $idempotencyKey
-    ): array;
+    ): CreatePendingOrderResponseInterface;
 }

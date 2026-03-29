@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SeoulCommerce\KoreaCheckoutAdapter\Api;
 
+use SeoulCommerce\KoreaCheckoutAdapter\Api\Data\ApplyPaymentEventResponseInterface;
+
 interface ApplyPaymentEventInterface
 {
     /**
@@ -13,7 +15,7 @@ interface ApplyPaymentEventInterface
      * @param string $normalizedStatus
      * @param string|null $occurredAt
      * @param string|null $gatewayTransactionRef
-     * @return array<string, mixed>
+     * @return \SeoulCommerce\KoreaCheckoutAdapter\Api\Data\ApplyPaymentEventResponseInterface
      */
     public function execute(
         string $orderId,
@@ -22,5 +24,5 @@ interface ApplyPaymentEventInterface
         string $normalizedStatus,
         ?string $occurredAt = null,
         ?string $gatewayTransactionRef = null
-    ): array;
+    ): ApplyPaymentEventResponseInterface;
 }

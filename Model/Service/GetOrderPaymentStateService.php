@@ -8,16 +8,19 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use SeoulCommerce\KoreaCheckoutAdapter\Api\GetOrderPaymentStateInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Api\Data\OrderPaymentStateInterface;
+use SeoulCommerce\KoreaCheckoutAdapter\Model\Data\OrderPaymentStateFactory;
 
 class GetOrderPaymentStateService implements GetOrderPaymentStateInterface
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly BindingLookup $bindingLookup
+        private readonly BindingLookup $bindingLookup,
+        private readonly OrderPaymentStateFactory $orderPaymentStateFactory
     ) {
     }
 
-    public function execute(string $orderId): array
+    public function execute(string $orderId): OrderPaymentStateInterface
     {
         $order = $this->orderRepository->get((int) $orderId);
         $binding = $this->bindingLookup->getByOrderId((int) $order->getEntityId());
@@ -27,15 +30,27 @@ class GetOrderPaymentStateService implements GetOrderPaymentStateInterface
             throw new LocalizedException(new Phrase('Order payment could not be loaded.'));
         }
 
-        return [
-            'orderId' => (string) $order->getEntityId(),
-            'orderNumber' => (string) $order->getIncrementId(),
-            'state' => (string) $order->getState(),
-            'status' => (string) $order->getStatus(),
-            'paymentSessionId' => $binding ? (string) $binding->getData('payment_session_id') : null,
-            'lastPaymentEventId' => $binding ? (string) $binding->getData('platform_event_id_last_applied') : null,
-            'lastNormalizedStatus' => $binding ? (string) $binding->getData('last_normalized_status') : null,
-            'paymentMethod' => (string) $payment->getMethod(),
-        ];
+        $paymentSessionId = null;
+        $lastPaymentEventId = null;
+        $lastNormalizedStatus = null;
+
+        if ($binding) {
+            $bindingPaymentSessionId = $binding->getData('payment_session_id');
+            $bindingLastPaymentEventId = $binding->getData('platform_event_id_last_applied');
+            $bindingLastNormalizedStatus = $binding->getData('last_normalized_status');
+
+            $paymentSessionId = $bindingPaymentSessionId === null ? null : (string) $bindingPaymentSessionId;
+            $lastPaymentEventId = $bindingLastPaymentEventId === null ? null : (string) $bindingLastPaymentEventId;
+            $lastNormalizedStatus = $bindingLastNormalizedStatus === null ? null : (string) $bindingLastNormalizedStatus;
+        }
+
+        return $this->orderPaymentStateFactory->create()
+            ->setOrderId((string) $order->getEntityId())
+            ->setOrderNumber((string) $order->getIncrementId())
+            ->setState((string) $order->getState())
+            ->setStatus((string) $order->getStatus())
+            ->setPaymentSessionId($paymentSessionId)
+            ->setLastPaymentEventId($lastPaymentEventId)
+            ->setLastNormalizedStatus($lastNormalizedStatus);
     }
 }
